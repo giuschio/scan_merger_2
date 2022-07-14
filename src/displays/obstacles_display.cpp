@@ -105,8 +105,7 @@ void ObstaclesDisplay::processMessage(const obstacle_detector::Obstacles::ConstP
     visual.reset(new CircleVisual(context_->getSceneManager(), scene_node_));
 
     visual->setData(circle);
-    visual->setFramePosition(position);
-    visual->setFrameOrientation(orientation);
+    visual->setFramePose(position, orientation);
 
     circle_visuals_.push_back(visual);
   }
@@ -116,8 +115,7 @@ void ObstaclesDisplay::processMessage(const obstacle_detector::Obstacles::ConstP
     visual.reset(new SegmentVisual(context_->getSceneManager(), scene_node_));
 
     visual->setData(segment);
-    visual->setFramePosition(position);
-    visual->setFrameOrientation(orientation);
+    visual->setFramePose(position, orientation);
 
     segment_visuals_.push_back(visual);
   }

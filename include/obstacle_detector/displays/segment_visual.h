@@ -59,8 +59,7 @@ public:
   virtual ~SegmentVisual();
 
   void setData(const obstacle_detector::SegmentObstacle& segment);
-  void setFramePosition(const Ogre::Vector3& position);
-  void setFrameOrientation(const Ogre::Quaternion& orientation);
+  void setFramePose(const Ogre::Vector3& position, const Ogre::Quaternion& orientation);
   void setColor(float r, float g, float b, float a);
   void setWidth(float w);
 
@@ -68,6 +67,8 @@ private:
   boost::shared_ptr<rviz::BillboardLine> line_;
   boost::shared_ptr<rviz::Arrow> velocity_;
   rviz::MovableText* text_;
+
+  Ogre::Vector3 center_position_;
 
   Ogre::SceneNode* frame_node_line_;
   Ogre::SceneNode* frame_node_velocity_;

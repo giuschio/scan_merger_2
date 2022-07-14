@@ -58,8 +58,7 @@ public:
   virtual ~CircleVisual();
 
   void setData(const obstacle_detector::CircleObstacle& circle);
-  void setFramePosition(const Ogre::Vector3& position);
-  void setFrameOrientation(const Ogre::Quaternion& orientation);
+  void setFramePose(const Ogre::Vector3& position, const Ogre::Quaternion& orientation);
   void setMainColor(float r, float g, float b, float a);
   void setMarginColor(float r, float g, float b, float a);
 
@@ -68,6 +67,8 @@ private:
   boost::shared_ptr<rviz::Shape> margin_;
   boost::shared_ptr<rviz::Arrow> velocity_;
   rviz::MovableText* text_;
+
+  Ogre::Vector3 center_position_;
 
   Ogre::SceneNode* frame_node_obstacle_;
   Ogre::SceneNode* frame_node_margin_;

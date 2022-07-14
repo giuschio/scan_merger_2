@@ -51,6 +51,7 @@ ObstacleTracker::ObstacleTracker(ros::NodeHandle& nh, ros::NodeHandle& nh_local)
 ObstacleTracker::~ObstacleTracker() {
   nh_local_.deleteParam("active");
   nh_local_.deleteParam("copy_segments");
+  nh_local_.deleteParam("compensate_robot_velocity");
 
   nh_local_.deleteParam("loop_rate");
   nh_local_.deleteParam("tracking_duration");
@@ -68,10 +69,10 @@ bool ObstacleTracker::updateParams(std_srvs::Empty::Request &req, std_srvs::Empt
 
   nh_local_.param<bool>("active", p_active_, true);
   nh_local_.param<bool>("copy_segments", p_copy_segments_, true);
-
+  nh_local_.param<bool>("compensate_robot_velocity", p_compensate_robot_velocity_, false); // Before using this, consider using pointcloud input from map frame instead of base_link frame
+  nh_local_.param<double>("sensor_rate", p_sensor_rate_, 10.0);
   nh_local_.param<double>("loop_rate", p_loop_rate_, 100.0);
   p_sampling_time_ = 1.0 / p_loop_rate_;
-  p_sensor_rate_ = 10.0;    // 10 Hz for Hokuyo
 
   nh_local_.param<double>("tracking_duration", p_tracking_duration_, 2.0);
   nh_local_.param<double>("min_correspondence_cost", p_min_correspondence_cost_, 0.3);
@@ -94,6 +95,8 @@ bool ObstacleTracker::updateParams(std_srvs::Empty::Request &req, std_srvs::Empt
 
   if (p_active_ != prev_active) {
     if (p_active_) {
+      if(p_compensate_robot_velocity_)
+        odom_sub_ = nh_.subscribe("/odom", 1, &ObstacleTracker::odomCallback, this);
       obstacles_sub_ = nh_.subscribe("raw_obstacles", 10, &ObstacleTracker::obstaclesCallback, this);
       obstacles_pub_ = nh_.advertise<obstacle_detector::Obstacles>("tracked_obstacles", 10);
       timer_.start();
@@ -123,6 +126,11 @@ bool ObstacleTracker::updateParams(std_srvs::Empty::Request &req, std_srvs::Empt
 void ObstacleTracker::timerCallback(const ros::TimerEvent&) {
   updateObstacles();
   publishObstacles();
+}
+
+void ObstacleTracker::odomCallback(const nav_msgs::Odometry::ConstPtr &msg)
+{
+  odom_ = *msg;
 }
 
 void ObstacleTracker::obstaclesCallback(const obstacle_detector::Obstacles::ConstPtr new_obstacles) {
@@ -679,10 +687,32 @@ void ObstacleTracker::publishObstacles() {
   for (auto& tracked_circle_obstacle : tracked_circle_obstacles_) {
     CircleObstacle ob = tracked_circle_obstacle.getObstacle();
     ob.true_radius = ob.radius - radius_margin_;
+    // Compensate robot velocity from obstacle velocity
+    // Velocities are in robot's frame, x forward y leftwards
+    if (p_compensate_robot_velocity_)
+    {
+      double distance = sqrt(pow(ob.center.x, 2) + pow(ob.center.y, 2));
+      double angle = atan2(ob.center.y, ob.center.x);
+      ob.velocity.x += odom_.twist.twist.linear.x - odom_.twist.twist.angular.z * distance * sin(angle);
+      ob.velocity.y += odom_.twist.twist.linear.y + odom_.twist.twist.angular.z * distance * cos(angle);
+    }
     obstacles_.circles.push_back(ob);
   }
   for (auto& tracked_segment_obstacle : tracked_segment_obstacles_) {
     SegmentObstacle ob = tracked_segment_obstacle.getObstacle();
+    // Compensate robot velocity from obstacle velocity
+    // Velocities are in robot's frame, x forward y leftwards
+    if (p_compensate_robot_velocity_)
+    {
+      double distance_first = sqrt(pow(ob.first_point.x, 2) + pow(ob.first_point.y, 2));
+      double distance_last = sqrt(pow(ob.last_point.x, 2) + pow(ob.last_point.y, 2));
+      double angle_first = atan2(ob.first_point.y, ob.first_point.x);
+      double angle_last = atan2(ob.last_point.y, ob.last_point.x);
+      ob.first_velocity.x += odom_.twist.twist.linear.x - odom_.twist.twist.angular.z * distance_first * sin(angle_first);
+      ob.first_velocity.y += odom_.twist.twist.linear.y + odom_.twist.twist.angular.z * distance_first * cos(angle_first);
+      ob.last_velocity.x += odom_.twist.twist.linear.x - odom_.twist.twist.angular.z * distance_last * sin(angle_last);
+      ob.last_velocity.y += odom_.twist.twist.linear.y + odom_.twist.twist.angular.z * distance_last * cos(angle_last);
+    }
     obstacles_.segments.push_back(ob);
   }
 

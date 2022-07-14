@@ -48,6 +48,7 @@ SegmentVisual::SegmentVisual(Ogre::SceneManager* scene_manager, Ogre::SceneNode*
   velocity_.reset(new rviz::Arrow(scene_manager_, frame_node_line_));
   const auto color = Ogre::ColourValue(0.0f, 0.5f, 1.0f);
   velocity_->setColor(color);
+  center_position_ = Ogre::Vector3(0.0, 0.0, 0.0);
   text_ = new rviz::MovableText("Segment");
   text_->setTextAlignment(rviz::MovableText::H_CENTER, rviz::MovableText::V_CENTER);
   text_->setColor(color);
@@ -67,26 +68,23 @@ void SegmentVisual::setData(const obstacle_detector::SegmentObstacle& segment) {
   line_->addPoint(p1);
   line_->addPoint(p2);
 
-  const auto center = (p1 + p2) / 2;
+  center_position_ = (p1 + p2) / 2;
   const auto velocity = Ogre::Vector3(segment.first_velocity.x + segment.last_velocity.x, segment.first_velocity.y + segment.last_velocity.y, segment.first_velocity.z + segment.last_velocity.z);
   const auto speed = sqrt(pow(velocity.x, 2.0) + pow(velocity.y, 2.0));
-  velocity_->setPosition(center);
+  velocity_->setPosition(center_position_);
   velocity_->setDirection(velocity);
   velocity_->setScale(Ogre::Vector3(speed));
 
-  frame_node_text_->setPosition(center);
+  //text_->setLocalTranslation(Ogre::Vector3(0.5,0,0));
   text_->setCharacterHeight(std::min(0.5, sqrt(pow(p1.x - p2.x, 2.0) + pow(p1.y - p2.y, 2.0)) / 2.0));
   text_->setCaption(std::to_string(segment.uid));
 }
 
-void SegmentVisual::setFramePosition(const Ogre::Vector3& position) {
+void SegmentVisual::setFramePose(const Ogre::Vector3& position, const Ogre::Quaternion& orientation) {
   frame_node_line_->setPosition(position);
-  //frame_node_text_->setPosition(position);
-}
-
-void SegmentVisual::setFrameOrientation(const Ogre::Quaternion& orientation) {
+  frame_node_text_->setPosition(position + orientation * center_position_);
   frame_node_line_->setOrientation(orientation);
-  frame_node_text_->setOrientation(orientation);
+  //frame_node_text_->setOrientation(orientation); // Has no effect
 }
 
 void SegmentVisual::setColor(float r, float g, float b, float a) {
