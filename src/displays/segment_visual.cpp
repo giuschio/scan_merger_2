@@ -76,7 +76,7 @@ void SegmentVisual::setData(const obstacle_detector::SegmentObstacle& segment) {
   velocity_->setScale(Ogre::Vector3(speed));
 
   //text_->setLocalTranslation(Ogre::Vector3(0.5,0,0));
-  text_->setCharacterHeight(std::min(0.5, sqrt(pow(p1.x - p2.x, 2.0) + pow(p1.y - p2.y, 2.0)) / 2.0));
+  text_->setCharacterHeight(std::max(0.1, std::min(0.5, sqrt(pow(p1.x - p2.x, 2.0) + pow(p1.y - p2.y, 2.0)) / 2.0)));
   text_->setCaption(std::to_string(segment.uid));
 }
 
