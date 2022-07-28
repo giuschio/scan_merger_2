@@ -6,7 +6,7 @@ The package requires [Armadillo C++](http://arma.sourceforge.net) library for co
 
 -----------------------
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/1482514/27595825-0abe4338-5b5e-11e7-8438-ffdeec4e9cef.png" alt="Visual example of obstacle detector output."/>
+  <img src="icons/classes/Obstacle Tracker 2.png" alt="Visual example of obstacle detector output."/>
   <br/>
   Fig. 1. Visual example of obstacle detector output.
 </p>

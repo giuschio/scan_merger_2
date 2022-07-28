@@ -68,7 +68,7 @@ void SegmentVisual::setData(const obstacle_detector::SegmentObstacle& segment) {
   line_->addPoint(p2);
 
   const auto center = (p1 + p2) / 2;
-  const auto velocity = Ogre::Vector3((segment.first_velocity.x - segment.last_velocity.x) / 2.0, (segment.first_velocity.y - segment.last_velocity.y) / 2.0, (segment.first_velocity.z - segment.last_velocity.z) / 2.0);
+  const auto velocity = Ogre::Vector3(segment.first_velocity.x + segment.last_velocity.x, segment.first_velocity.y + segment.last_velocity.y, segment.first_velocity.z + segment.last_velocity.z);
   const auto speed = sqrt(pow(velocity.x, 2.0) + pow(velocity.y, 2.0));
   velocity_->setPosition(center);
   velocity_->setDirection(velocity);
