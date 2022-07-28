@@ -110,15 +110,7 @@ bool ScansMerger::updateParams(std_srvs::Empty::Request &req, std_srvs::Empty::R
 }
 
 void ScansMerger::frontScanCallback(const sensor_msgs::LaserScan::ConstPtr front_scan) {
-  try {
-    tf_ls_.waitForTransform(front_scan->header.frame_id, p_fixed_frame_id_,
-                            front_scan->header.stamp + ros::Duration().fromSec(front_scan->ranges.size() * front_scan->time_increment), ros::Duration(0.05));
-    projector_.transformLaserScanToPointCloud(p_fixed_frame_id_, *front_scan, front_pcl_, tf_ls_);
-  }
-  catch (tf::TransformException& ex) {
-    front_scan_error_ = true;
-    return;
-  }
+  projector_.projectLaser(*front_scan, front_pcl_);
 
   front_scan_received_ = true;
   front_scan_error_ = false;
@@ -130,15 +122,7 @@ void ScansMerger::frontScanCallback(const sensor_msgs::LaserScan::ConstPtr front
 }
 
 void ScansMerger::rearScanCallback(const sensor_msgs::LaserScan::ConstPtr rear_scan) {
-  try {
-    tf_ls_.waitForTransform(rear_scan->header.frame_id, p_fixed_frame_id_,
-                               rear_scan->header.stamp + ros::Duration().fromSec(rear_scan->ranges.size() * rear_scan->time_increment), ros::Duration(0.05));
-    projector_.transformLaserScanToPointCloud(p_fixed_frame_id_, *rear_scan, rear_pcl_, tf_ls_);
-  }
-  catch (tf::TransformException& ex) {
-    rear_scan_error_ = true;
-    return;
-  }
+  projector_.projectLaser(*rear_scan, rear_pcl_);
 
   rear_scan_received_ = true;
   rear_scan_error_ = false;
@@ -154,69 +138,82 @@ void ScansMerger::publishMessages() {
 
   vector<float> ranges;
   vector<geometry_msgs::Point32> points;
+  vector<float> range_values;
+  sensor_msgs::ChannelFloat32 range_channel;
+  range_channel.name = "range";
   sensor_msgs::PointCloud new_front_pcl, new_rear_pcl;
 
   ranges.assign(p_ranges_num_, nanf("")); // Assign nan values
 
   if (!front_scan_error_) {
+    tf::StampedTransform target_to_lidar;
     try {
       tf_ls_.waitForTransform(p_target_frame_id_, now, front_pcl_.header.frame_id, front_pcl_.header.stamp, p_fixed_frame_id_, ros::Duration(0.05));
+      tf_ls_.lookupTransform(p_target_frame_id_, now, front_pcl_.header.frame_id, front_pcl_.header.stamp, p_fixed_frame_id_, target_to_lidar);
       tf_ls_.transformPointCloud(p_target_frame_id_, now, front_pcl_, p_fixed_frame_id_, new_front_pcl);
     }
     catch (tf::TransformException& ex) {
       return;
     }
+    const tf::Vector3 target_to_lidar_origin = target_to_lidar.getOrigin();
+    ROS_INFO_STREAM_ONCE("Front lidar origin (frame " << front_pcl_.header.frame_id << ") is at (" << target_to_lidar_origin.getX() << ", " << target_to_lidar_origin.getY() << ") w.r.t. frame " << p_target_frame_id_);
 
     for (auto& point : new_front_pcl.points) {
-      if (point.x > p_min_x_range_ && point.x < p_max_x_range_ &&
-          point.y > p_min_y_range_ && point.y < p_max_y_range_) {
+      const double range_x = point.x - target_to_lidar_origin.getX();
+      const double range_y = point.y - target_to_lidar_origin.getY();
+      const double range = sqrt(pow(range_x, 2.0) + pow(range_y, 2.0));
 
-        double range = sqrt(pow(point.x, 2.0) + pow(point.y, 2.0));
+      if (range_x > p_min_x_range_ && range_x < p_max_x_range_ &&
+          range_y > p_min_y_range_ && range_y < p_max_y_range_ &&
+          range > p_min_scanner_range_ && range < p_max_scanner_range_) {
+        if (p_publish_pcl_) {
+          points.push_back(point);
+          range_channel.values.push_back(range);
+        }
 
-        if (range > p_min_scanner_range_ && range < p_max_scanner_range_) {
-          if (p_publish_pcl_) {
-            points.push_back(point);
-          }
+        if (p_publish_scan_) {
+          double angle = atan2(range_y, range_x);
 
-          if (p_publish_scan_) {
-            double angle = atan2(point.y, point.x);
-
-            size_t idx = static_cast<int>(p_ranges_num_ * (angle + M_PI) / (2.0 * M_PI));
-            if (isnan(ranges[idx]) || range < ranges[idx])
-              ranges[idx] = range;
-          }
+          size_t idx = static_cast<int>(p_ranges_num_ * (angle + M_PI) / (2.0 * M_PI));
+          if (isnan(ranges[idx]) || range < ranges[idx])
+            ranges[idx] = range;
         }
       }
     }
   }
 
   if (!rear_scan_error_) {
+    tf::StampedTransform target_to_lidar;
     try {
       tf_ls_.waitForTransform(p_target_frame_id_, now, rear_pcl_.header.frame_id, rear_pcl_.header.stamp, p_fixed_frame_id_, ros::Duration(0.05));
+      tf_ls_.lookupTransform(p_target_frame_id_, now, rear_pcl_.header.frame_id, rear_pcl_.header.stamp, p_fixed_frame_id_, target_to_lidar);
       tf_ls_.transformPointCloud(p_target_frame_id_, now, rear_pcl_,  p_fixed_frame_id_, new_rear_pcl);
     }
     catch (tf::TransformException& ex) {
       return;
     }
+    const tf::Vector3 target_to_lidar_origin = target_to_lidar.getOrigin();
+    ROS_INFO_STREAM_ONCE("Rear lidar origin (frame " << rear_pcl_.header.frame_id << ") is at (" << target_to_lidar_origin.getX() << ", " << target_to_lidar_origin.getY() << ") w.r.t. frame " << p_target_frame_id_);
 
     for (auto& point : new_rear_pcl.points) {
-      if (point.x > p_min_x_range_ && point.x < p_max_x_range_ &&
-          point.y > p_min_y_range_ && point.y < p_max_y_range_) {
+      const double range_x = point.x - target_to_lidar_origin.getX();
+      const double range_y = point.y - target_to_lidar_origin.getY();
+      const double range = sqrt(pow(range_x, 2.0) + pow(range_y, 2.0));
 
-        double range = sqrt(pow(point.x, 2.0) + pow(point.y, 2.0));
+      if (range_x > p_min_x_range_ && range_x < p_max_x_range_ &&
+          range_y > p_min_y_range_ && range_y < p_max_y_range_ &&
+          range > p_min_scanner_range_ && range < p_max_scanner_range_) {
+        if (p_publish_pcl_) {
+          points.push_back(point);
+          range_channel.values.push_back(range);
+        }
 
-        if (range > p_min_scanner_range_ && range < p_max_scanner_range_) {
-          if (p_publish_pcl_) {
-            points.push_back(point);
-          }
+        if (p_publish_scan_) {
+          double angle = atan2(range_y, range_x);
 
-          if (p_publish_scan_) {
-            double angle = atan2(point.y, point.x);
-
-            size_t idx = static_cast<int>(p_ranges_num_ * (angle + M_PI) / (2.0 * M_PI));
-            if (isnan(ranges[idx]) || range < ranges[idx])
-              ranges[idx] = range;
-          }
+          size_t idx = static_cast<int>(p_ranges_num_ * (angle + M_PI) / (2.0 * M_PI));
+          if (isnan(ranges[idx]) || range < ranges[idx])
+            ranges[idx] = range;
         }
       }
     }
@@ -245,6 +242,8 @@ void ScansMerger::publishMessages() {
     pcl_msg->header.frame_id = p_target_frame_id_;
     pcl_msg->header.stamp = now;
     pcl_msg->points.assign(points.begin(), points.end());
+    pcl_msg->channels.push_back(range_channel);
+    assert(range_channel.values.size() == points.size());
 
     pcl_pub_.publish(pcl_msg);
   }

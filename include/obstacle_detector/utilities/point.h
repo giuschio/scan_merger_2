@@ -44,10 +44,11 @@ namespace obstacle_detector
 class Point
 {
 public:
-  Point(double x = 0.0, double y = 0.0) : x(x), y(y) {}
-  Point(const Point& p) : x(p.x), y(p.y) {}
+  Point(double x = 0.0, double y = 0.0, double range = 0.0) : x(x), y(y), range(range) {}
+  Point(const Point& p) : x(p.x), y(p.y), range(p.range) {}
   static Point fromPoolarCoords(const double r, const double phi) { return Point(r * cos(phi), r * sin(phi)); }
 
+  double getRange()      const { return range > 0.0 ? range : length(); }
   double length()        const { return sqrt(pow(x, 2.0) + pow(y, 2.0)); }
   double lengthSquared() const { return pow(x, 2.0) + pow(y, 2.0); }
   double angle()         const { return atan2(y, x); }
@@ -81,10 +82,11 @@ public:
   friend bool operator!  (const Point& p1) { return (p1.x == 0.0 && p1.y == 0.0); }
 
   friend std::ostream& operator<<(std::ostream& out, const Point& p)
-  { out << "(" << p.x << ", " << p.y << ")"; return out; }
+  { out << "(" << p.x << ", " << p.y << ") with range " << p.range << " to origin"; return out; }
 
   double x;
   double y;
+  double range = 0.0; // Distance w.r.t. lidar scan origin
 };
 
 } // namespace obstacle_detector

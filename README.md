@@ -66,7 +66,9 @@ Even if only one laser scanner is used, the node can be useful for simple data p
 * `~min_y_range` (`double`, default: `-10.0`) - as above,
 * `~max_y_range` (`double`, default: `10.0`) - as above,
 * `~fixed_frame_id` (`string`, default: `map`) - name of the fixed coordinate frame used for scan rectification in time,
-* `~target_frame_id` (`string`, default: `robot`) - name of the coordinate frame used as the origin for the produced laser scan or point cloud.
+* `~target_frame_id` (`string`, default: `map`) - name of the coordinate frame used as the origin for the produced laser scan or point cloud.
+
+In the original implementation, the `~target_frame_id` is the `robot` frame. However, with a moving robot, this causes the Kalman filters later on to think that the points are moving even though the robot is moving w. r. t. the map. That's why we enhance the point cloud with "range" (distance) information in the `scans_merger` node. This means that even though the origin of the target frame does not match the lidar scan origin, we still preserve the distance of each point to the scanner that produced the point. For that reason, it is absolutely essential to run the scans through the `scans_merger` node, even if not merging scans and to set `publish_pcl` to `true`.
 
 The package comes with Rviz panel for this node.
 

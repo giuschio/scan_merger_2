@@ -149,8 +149,19 @@ void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud::ConstPtr pcl_
   base_frame_id_ = pcl_msg->header.frame_id;
   stamp_ = pcl_msg->header.stamp;
 
-  for (const geometry_msgs::Point32& point : pcl_msg->points)
-    input_points_.push_back(Point(point.x, point.y));
+  const auto range_channel = std::find_if(pcl_msg->channels.begin(), pcl_msg->channels.end(), [] (const sensor_msgs::ChannelFloat32& channel) { return channel.name == "range"; } );
+  int i = 0;
+  for (const geometry_msgs::Point32& point : pcl_msg->points) {
+    auto point_copy = Point(point.x, point.y);
+    if (range_channel != pcl_msg->channels.end()) {
+      point_copy.range = range_channel->values.at(i++);
+      assert(point_copy.range >= 0.0);
+      ROS_INFO_STREAM_ONCE("Point cloud contains range information, an example value is " << point_copy.range);
+    } else {
+      ROS_WARN_ONCE("Point cloud does not contain range information, assuming point cloud origin aligns with lidar origin");
+    }
+    input_points_.push_back(point_copy);
+  }
 
   processPoints();
 }
@@ -180,7 +191,7 @@ void ObstacleExtractor::groupPoints() {
   point_set.is_visible = true;
 
   for (PointIterator point = input_points_.begin()++; point != input_points_.end(); ++point) {
-    double range = (*point).length();
+    double range = (*point).getRange();
     double distance = (*point - *point_set.end).length();
 
     if (distance < p_max_group_distance_ + range * p_distance_proportion_) {
@@ -188,7 +199,7 @@ void ObstacleExtractor::groupPoints() {
       point_set.num_points++;
     }
     else {
-      double prev_range = (*point_set.end).length();
+      double prev_range = (*point_set.end).getRange();
 
       // Heron's equation
       double p = (range + prev_range + distance) / 2.0;
@@ -234,7 +245,7 @@ void ObstacleExtractor::detectSegments(const PointSet& point_set) {
     ++point_index;
 
     if ((distance = segment.distanceTo(*point)) >= max_distance) {
-      double r = (*point).length();
+      double r = (*point).getRange();
 
       if (distance > p_max_split_distance_ + r * p_distance_proportion_) {
         max_distance = distance;
