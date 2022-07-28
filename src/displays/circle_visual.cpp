@@ -46,7 +46,7 @@ CircleVisual::CircleVisual(Ogre::SceneManager* scene_manager, Ogre::SceneNode* p
 
   obstacle_.reset(new rviz::Shape(rviz::Shape::Cylinder, scene_manager_, frame_node_obstacle_));
   margin_.reset(new rviz::Shape(rviz::Shape::Cylinder, scene_manager_, frame_node_margin_));
-  text_ = new rviz::MovableText("Test");
+  text_ = new rviz::MovableText("Circle");
   text_->setTextAlignment(rviz::MovableText::H_CENTER, rviz::MovableText::V_CENTER);
   frame_node_text_->attachObject(text_);
 }
@@ -55,6 +55,7 @@ CircleVisual::~CircleVisual() {
   scene_manager_->destroySceneNode(frame_node_obstacle_);
   scene_manager_->destroySceneNode(frame_node_margin_);
   scene_manager_->destroySceneNode(frame_node_text_);
+  delete text_;
 }
 
 void CircleVisual::setData(const obstacle_detector::CircleObstacle& circle) {
@@ -71,7 +72,7 @@ void CircleVisual::setData(const obstacle_detector::CircleObstacle& circle) {
   margin_->setScale(scale);
 
   frame_node_text_->setPosition(pos);
-  text_->setCharacterHeight(circle.true_radius);
+  text_->setCharacterHeight(circle.true_radius * 2);
   text_->setCaption(std::to_string(circle.uid));
 
   Ogre::Vector3 dir(Ogre::Real(1.0), Ogre::Real(0.0), Ogre::Real(0.0));

@@ -40,13 +40,20 @@ namespace obstacles_display
 
 SegmentVisual::SegmentVisual(Ogre::SceneManager* scene_manager, Ogre::SceneNode* parent_node) {
   scene_manager_ = scene_manager;
-  frame_node_ = parent_node->createChildSceneNode();
+  frame_node_line_ = parent_node->createChildSceneNode();
+  frame_node_text_ = parent_node->createChildSceneNode();
 
-  line_.reset(new rviz::BillboardLine(scene_manager_, frame_node_));
+  line_.reset(new rviz::BillboardLine(scene_manager_, frame_node_line_));
+  text_ = new rviz::MovableText("Line");
+  text_->setTextAlignment(rviz::MovableText::H_CENTER, rviz::MovableText::V_CENTER);
+  text_->setColor(Ogre::ColourValue(0.0f, 0.5f, 1.0f));
+  frame_node_text_->attachObject(text_);
 }
 
 SegmentVisual::~SegmentVisual() {
-  scene_manager_->destroySceneNode(frame_node_);
+  scene_manager_->destroySceneNode(frame_node_line_);
+  scene_manager_->destroySceneNode(frame_node_text_);
+  delete text_;
 }
 
 void SegmentVisual::setData(const obstacle_detector::SegmentObstacle& segment) {
@@ -54,14 +61,20 @@ void SegmentVisual::setData(const obstacle_detector::SegmentObstacle& segment) {
   Ogre::Vector3 p2(segment.last_point.x, segment.last_point.y, 0.0);
   line_->addPoint(p1);
   line_->addPoint(p2);
+
+  frame_node_text_->setPosition((p1 + p2) / 2);
+  text_->setCharacterHeight(std::min(0.5, sqrt(pow(p1.x - p2.x, 2.0) + pow(p1.y - p2.y, 2.0)) / 2));
+  text_->setCaption(std::to_string(segment.uid));
 }
 
 void SegmentVisual::setFramePosition(const Ogre::Vector3& position) {
-  frame_node_->setPosition(position);
+  frame_node_line_->setPosition(position);
+  //frame_node_text_->setPosition(position);
 }
 
 void SegmentVisual::setFrameOrientation(const Ogre::Quaternion& orientation) {
-  frame_node_->setOrientation(orientation);
+  frame_node_line_->setOrientation(orientation);
+  frame_node_text_->setOrientation(orientation);
 }
 
 void SegmentVisual::setColor(float r, float g, float b, float a) {

@@ -126,7 +126,7 @@ The package comes with Rviz panel for this node.
 
 ### 1.3. The obstacle_tracker node
 
-This node tracks and filters the circular obstacles with the use of Kalman filter. It subscribes to messages of custom type `obstacle_detector/Obstacles` from topic `raw_obstacles` and publishes messages of the same type under topic `tracked_obstacles`. The tracking algorithm is applied only to the circular obstacles, hence the segments list in the published message is simply a copy of the original segments. The tracked obstacles are supplemented with additional information on their velocity.
+This node tracks and filters the circular and line segment obstacles with the use of Kalman filter. It subscribes to messages of custom type `obstacle_detector/Obstacles` from topic `raw_obstacles` and publishes messages of the same type under topic `tracked_obstacles`. The tracking algorithm is applied to both, the circular obstacles and line segments. The tracked obstacles are supplemented with additional information on their velocity.
 
 -----------------------
 <p align="center">

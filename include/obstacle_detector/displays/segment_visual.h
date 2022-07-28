@@ -44,6 +44,7 @@
 
 #include <rviz/ogre_helpers/line.h>
 #include <rviz/ogre_helpers/billboard_line.h>
+#include <rviz/ogre_helpers/movable_text.h>
 #endif
 
 namespace obstacles_display
@@ -64,8 +65,10 @@ public:
 
 private:
   boost::shared_ptr<rviz::BillboardLine> line_;
+  rviz::MovableText* text_;
 
-  Ogre::SceneNode* frame_node_;
+  Ogre::SceneNode* frame_node_line_;
+  Ogre::SceneNode* frame_node_text_;
   Ogre::SceneManager* scene_manager_;
 };
 
