@@ -42,10 +42,12 @@ CircleVisual::CircleVisual(Ogre::SceneManager* scene_manager, Ogre::SceneNode* p
   scene_manager_ = scene_manager;
   frame_node_obstacle_ = parent_node->createChildSceneNode();
   frame_node_margin_ = parent_node->createChildSceneNode();
+  frame_node_velocity_ = parent_node->createChildSceneNode();
   frame_node_text_ = parent_node->createChildSceneNode();
 
   obstacle_.reset(new rviz::Shape(rviz::Shape::Cylinder, scene_manager_, frame_node_obstacle_));
   margin_.reset(new rviz::Shape(rviz::Shape::Cylinder, scene_manager_, frame_node_margin_));
+  velocity_.reset(new rviz::Arrow(scene_manager_, frame_node_margin_));
   text_ = new rviz::MovableText("Circle");
   text_->setTextAlignment(rviz::MovableText::H_CENTER, rviz::MovableText::V_CENTER);
   frame_node_text_->attachObject(text_);
@@ -54,6 +56,7 @@ CircleVisual::CircleVisual(Ogre::SceneManager* scene_manager, Ogre::SceneNode* p
 CircleVisual::~CircleVisual() {
   scene_manager_->destroySceneNode(frame_node_obstacle_);
   scene_manager_->destroySceneNode(frame_node_margin_);
+  scene_manager_->destroySceneNode(frame_node_velocity_);
   scene_manager_->destroySceneNode(frame_node_text_);
   delete text_;
 }
@@ -70,6 +73,11 @@ void CircleVisual::setData(const obstacle_detector::CircleObstacle& circle) {
 
   Ogre::Vector3 scale(2.0 * circle.radius, 0.2, 2.0 * circle.radius);
   margin_->setScale(scale);
+
+  const auto speed = sqrt(pow(circle.velocity.x, 2.0) + pow(circle.velocity.y, 2.0));
+  velocity_->setPosition(pos);
+  velocity_->setDirection(Ogre::Vector3(circle.velocity.x, circle.velocity.y, circle.velocity.z));
+  velocity_->setScale(Ogre::Vector3(speed));
 
   frame_node_text_->setPosition(pos);
   text_->setCharacterHeight(circle.true_radius * 2);

@@ -41,17 +41,22 @@ namespace obstacles_display
 SegmentVisual::SegmentVisual(Ogre::SceneManager* scene_manager, Ogre::SceneNode* parent_node) {
   scene_manager_ = scene_manager;
   frame_node_line_ = parent_node->createChildSceneNode();
+  frame_node_velocity_ = parent_node->createChildSceneNode();
   frame_node_text_ = parent_node->createChildSceneNode();
 
   line_.reset(new rviz::BillboardLine(scene_manager_, frame_node_line_));
-  text_ = new rviz::MovableText("Line");
+  velocity_.reset(new rviz::Arrow(scene_manager_, frame_node_line_));
+  const auto color = Ogre::ColourValue(0.0f, 0.5f, 1.0f);
+  velocity_->setColor(color);
+  text_ = new rviz::MovableText("Segment");
   text_->setTextAlignment(rviz::MovableText::H_CENTER, rviz::MovableText::V_CENTER);
-  text_->setColor(Ogre::ColourValue(0.0f, 0.5f, 1.0f));
+  text_->setColor(color);
   frame_node_text_->attachObject(text_);
 }
 
 SegmentVisual::~SegmentVisual() {
   scene_manager_->destroySceneNode(frame_node_line_);
+  scene_manager_->destroySceneNode(frame_node_velocity_);
   scene_manager_->destroySceneNode(frame_node_text_);
   delete text_;
 }
@@ -62,8 +67,15 @@ void SegmentVisual::setData(const obstacle_detector::SegmentObstacle& segment) {
   line_->addPoint(p1);
   line_->addPoint(p2);
 
-  frame_node_text_->setPosition((p1 + p2) / 2);
-  text_->setCharacterHeight(std::min(0.5, sqrt(pow(p1.x - p2.x, 2.0) + pow(p1.y - p2.y, 2.0)) / 2));
+  const auto center = (p1 + p2) / 2;
+  const auto velocity = Ogre::Vector3((segment.first_velocity.x - segment.last_velocity.x) / 2.0, (segment.first_velocity.y - segment.last_velocity.y) / 2.0, (segment.first_velocity.z - segment.last_velocity.z) / 2.0);
+  const auto speed = sqrt(pow(velocity.x, 2.0) + pow(velocity.y, 2.0));
+  velocity_->setPosition(center);
+  velocity_->setDirection(velocity);
+  velocity_->setScale(Ogre::Vector3(speed));
+
+  frame_node_text_->setPosition(center);
+  text_->setCharacterHeight(std::min(0.5, sqrt(pow(p1.x - p2.x, 2.0) + pow(p1.y - p2.y, 2.0)) / 2.0));
   text_->setCaption(std::to_string(segment.uid));
 }
 
