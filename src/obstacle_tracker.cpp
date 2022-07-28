@@ -480,6 +480,7 @@ void ObstacleTracker::publishObstacles() {
 }
 
 // Ugly initialization of static members of tracked obstacles...
+uint64_t TrackedObstacle::uid_next_              = 0;
 int    TrackedObstacle::s_fade_counter_size_     = 0;
 double TrackedObstacle::s_sampling_time_         = 100.0;
 double TrackedObstacle::s_process_variance_      = 0.0;

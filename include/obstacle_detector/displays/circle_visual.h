@@ -43,6 +43,7 @@
 #include <OGRE/OgreSceneManager.h>
 
 #include <rviz/ogre_helpers/shape.h>
+#include <rviz/ogre_helpers/movable_text.h>
 #endif
 
 namespace obstacles_display
@@ -64,9 +65,11 @@ public:
 private:
   boost::shared_ptr<rviz::Shape> obstacle_;
   boost::shared_ptr<rviz::Shape> margin_;
+  rviz::MovableText* text_;
 
-  Ogre::SceneNode* frame_node_1_;
-  Ogre::SceneNode* frame_node_2_;
+  Ogre::SceneNode* frame_node_obstacle_;
+  Ogre::SceneNode* frame_node_margin_;
+  Ogre::SceneNode* frame_node_text_;
   Ogre::SceneManager* scene_manager_;
 };
 

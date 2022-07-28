@@ -40,16 +40,21 @@ namespace obstacles_display
 
 CircleVisual::CircleVisual(Ogre::SceneManager* scene_manager, Ogre::SceneNode* parent_node) {
   scene_manager_ = scene_manager;
-  frame_node_1_ = parent_node->createChildSceneNode();
-  frame_node_2_ = parent_node->createChildSceneNode();
+  frame_node_obstacle_ = parent_node->createChildSceneNode();
+  frame_node_margin_ = parent_node->createChildSceneNode();
+  frame_node_text_ = parent_node->createChildSceneNode();
 
-  obstacle_.reset(new rviz::Shape(rviz::Shape::Cylinder, scene_manager_, frame_node_1_));
-  margin_.reset(new rviz::Shape(rviz::Shape::Cylinder, scene_manager_, frame_node_2_));
+  obstacle_.reset(new rviz::Shape(rviz::Shape::Cylinder, scene_manager_, frame_node_obstacle_));
+  margin_.reset(new rviz::Shape(rviz::Shape::Cylinder, scene_manager_, frame_node_margin_));
+  text_ = new rviz::MovableText("Test");
+  text_->setTextAlignment(rviz::MovableText::H_CENTER, rviz::MovableText::V_CENTER);
+  frame_node_text_->attachObject(text_);
 }
 
 CircleVisual::~CircleVisual() {
-  scene_manager_->destroySceneNode(frame_node_1_);
-  scene_manager_->destroySceneNode(frame_node_2_);
+  scene_manager_->destroySceneNode(frame_node_obstacle_);
+  scene_manager_->destroySceneNode(frame_node_margin_);
+  scene_manager_->destroySceneNode(frame_node_text_);
 }
 
 void CircleVisual::setData(const obstacle_detector::CircleObstacle& circle) {
@@ -65,6 +70,10 @@ void CircleVisual::setData(const obstacle_detector::CircleObstacle& circle) {
   Ogre::Vector3 scale(2.0 * circle.radius, 0.2, 2.0 * circle.radius);
   margin_->setScale(scale);
 
+  frame_node_text_->setPosition(pos);
+  text_->setCharacterHeight(circle.true_radius);
+  text_->setCaption(std::to_string(circle.uid));
+
   Ogre::Vector3 dir(Ogre::Real(1.0), Ogre::Real(0.0), Ogre::Real(0.0));
   Ogre::Radian angle(Ogre::Real(M_PI_2));
   Ogre::Quaternion q(angle, dir);
@@ -73,13 +82,15 @@ void CircleVisual::setData(const obstacle_detector::CircleObstacle& circle) {
 }
 
 void CircleVisual::setFramePosition(const Ogre::Vector3& position) {
-  frame_node_1_->setPosition(position);
-  frame_node_2_->setPosition(position);
+  frame_node_obstacle_->setPosition(position);
+  frame_node_margin_->setPosition(position);
+  //frame_node_text_->setPosition(position);
 }
 
 void CircleVisual::setFrameOrientation(const Ogre::Quaternion& orientation) {
-  frame_node_1_->setOrientation(orientation);
-  frame_node_2_->setOrientation(orientation);
+  frame_node_obstacle_->setOrientation(orientation);
+  frame_node_margin_->setOrientation(orientation);
+  frame_node_text_->setOrientation(orientation);
 }
 
 void CircleVisual::setMainColor(float r, float g, float b, float a) {

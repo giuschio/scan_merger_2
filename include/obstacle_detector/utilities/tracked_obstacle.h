@@ -44,6 +44,7 @@ namespace obstacle_detector
 class TrackedObstacle {
 public:
   TrackedObstacle(const CircleObstacle& obstacle) : obstacle_(obstacle), kf_x_(0, 1, 2), kf_y_(0, 1, 2), kf_r_(0, 1, 2) {
+    obstacle_.uid = uid_next_++;
     fade_counter_ = s_fade_counter_size_;
     initKF();
   }
@@ -170,6 +171,7 @@ private:
   int fade_counter_;
 
   // Common variables
+  static uint64_t uid_next_;
   static int s_fade_counter_size_;
   static double s_sampling_time_;
   static double s_process_variance_;
