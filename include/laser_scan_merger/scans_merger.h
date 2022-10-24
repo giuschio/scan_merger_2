@@ -35,43 +35,59 @@
 
 #pragma once
 
-#include <ros/ros.h>
-#include <std_srvs/Empty.h>
-#include <geometry_msgs/Pose2D.h>
-#include <sensor_msgs/LaserScan.h>
-#include <sensor_msgs/PointCloud.h>
-#include <tf/transform_listener.h>
-#include <laser_geometry/laser_geometry.h>
+#include "rclcpp/rclcpp.hpp"
+#include "laser_geometry/laser_geometry.hpp"
+#include "tf2/convert.h"
+#include "tf2/exceptions.h"
+#include "tf2_ros/transform_listener.h"
+#include "tf2_ros/buffer.h"
 
-namespace obstacle_detector
+#include "geometry_msgs/msg/pose2_d.hpp"
+#include "geometry_msgs/msg/point32.hpp"
+#include "geometry_msgs/msg/transform_stamped.hpp"
+#include "sensor_msgs/point_cloud2_iterator.hpp"
+#include "sensor_msgs/msg/laser_scan.hpp"
+#include "sensor_msgs/msg/point_cloud2.hpp"
+#include "sensor_msgs/msg/channel_float32.hpp"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "tf2_sensor_msgs/tf2_sensor_msgs.hpp"
+
+#include "std_srvs/srv/empty.hpp"
+
+
+namespace laser_scan_merger
 {
 
 class ScansMerger
 {
 public:
-  ScansMerger(ros::NodeHandle& nh, ros::NodeHandle& nh_local);
+  ScansMerger(std::shared_ptr<rclcpp::Node> nh, std::shared_ptr<rclcpp::Node> nh_local);
   ~ScansMerger();
 
 private:
-  bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
-  void frontScanCallback(const sensor_msgs::LaserScan::ConstPtr front_scan);
-  void rearScanCallback(const sensor_msgs::LaserScan::ConstPtr rear_scan);
+  void updateParamsUtil();
+  void updateParams(const std::shared_ptr<rmw_request_id_t> request_header, 
+                    const std::shared_ptr<std_srvs::srv::Empty::Request> &req, 
+                    const std::shared_ptr<std_srvs::srv::Empty::Response> &res);
+  void frontScanCallback(sensor_msgs::msg::LaserScan::SharedPtr front_scan);
+  void rearScanCallback(sensor_msgs::msg::LaserScan::SharedPtr rear_scan);
 
-  void initialize() { std_srvs::Empty empt; updateParams(empt.request, empt.response); }
+  void initialize() { std_srvs::srv::Empty empt; updateParamsUtil(); }
 
   void publishMessages();
 
-  ros::NodeHandle nh_;
-  ros::NodeHandle nh_local_;
+  std::shared_ptr<rclcpp::Node> nh_;
+  std::shared_ptr<rclcpp::Node> nh_local_;
 
-  ros::ServiceServer params_srv_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr params_srv_;
 
-  ros::Subscriber front_scan_sub_;
-  ros::Subscriber rear_scan_sub_;
-  ros::Publisher scan_pub_;
-  ros::Publisher pcl_pub_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr front_scan_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr rear_scan_sub_;
+  rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr scan_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pcl_pub_;
 
-  tf::TransformListener tf_ls_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   laser_geometry::LaserProjection projector_;
 
   bool front_scan_received_;
@@ -79,8 +95,8 @@ private:
   bool front_scan_error_;
   bool rear_scan_error_;
 
-  sensor_msgs::PointCloud front_pcl_;
-  sensor_msgs::PointCloud rear_pcl_;
+  sensor_msgs::msg::PointCloud2 front_pcl_;
+  sensor_msgs::msg::PointCloud2 rear_pcl_;
 
   // Parameters
   bool p_active_;
@@ -100,4 +116,4 @@ private:
   std::string p_target_frame_id_;
 };
 
-} // namespace obstacle_detector
+} // namespace laser_scan_merger

@@ -33,26 +33,28 @@
  * Author: Mateusz Przybyla
  */
 
-#include "obstacle_detector/scans_merger.h"
+#include "laser_scan_merger/scans_merger.h"
 
-using namespace obstacle_detector;
+using namespace laser_scan_merger;
 
 int main(int argc, char** argv) {
-  ros::init(argc, argv, "scans_merger", ros::init_options::NoRosout);
-  ros::NodeHandle nh("");
-  ros::NodeHandle nh_local("~");
-
+  rclcpp::init(argc, argv);
+  auto merger_node = rclcpp::Node::make_shared("laser_scan_merger");
   try {
-    ROS_INFO("[Scans Merger]: Initializing node");
-    ScansMerger sm(nh, nh_local);
-    ros::spin();
+    RCLCPP_INFO(merger_node->get_logger(), "[Laser Scan Merger]: Initializing node");
+    ScansMerger ot(merger_node, merger_node);
+    rclcpp::spin(merger_node);
   }
   catch (const char* s) {
-    ROS_FATAL_STREAM("[Scans Merger]: " << s);
+    RCLCPP_FATAL_STREAM(merger_node->get_logger(), "[Laser Scan Merger]: "  << s);
   }
-  catch (...) {
-    ROS_FATAL_STREAM("[Scans Merger]: Unexpected error");
+  catch (const std::exception &exc) {
+    auto eptr = std::current_exception(); // capture
+    RCLCPP_FATAL_STREAM(merger_node->get_logger(), "[Laser Scan Merger]: " << exc.what());
   }
-
+  catch (...){
+    RCLCPP_FATAL_STREAM(merger_node->get_logger(), "[Laser Scan Merger]: Unknown error");
+  }
+  rclcpp::shutdown();
   return 0;
 }
