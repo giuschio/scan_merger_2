@@ -103,7 +103,7 @@ void ScansMerger::updateParamsUtil(){
   nh_->declare_parameter("max_y_range", rclcpp::PARAMETER_DOUBLE);
 
   nh_->declare_parameter("fixed_frame_id", rclcpp::PARAMETER_STRING);
-  nh_->declare_parameter("fixed_frame_id", rclcpp::PARAMETER_STRING);
+  nh_->declare_parameter("target_frame_id", rclcpp::PARAMETER_STRING);
 
   nh_->get_parameter_or("active", p_active_, true);
   nh_->get_parameter_or("publish_scan", p_publish_scan_, false);
@@ -198,18 +198,15 @@ void ScansMerger::publishMessages() {
     sensor_msgs::PointCloud2Iterator<float> iter_x(new_front_pcl, "x");
     sensor_msgs::PointCloud2Iterator<float> iter_y(new_front_pcl, "y");
     for (size_t i = 0; i < number_of_points; ++i, ++iter_x, ++iter_y){     
-      
       double point_x = (*iter_x);
       double point_y = (*iter_y);
-      const double range_x = point_x - target_to_lidar_origin.getX();
-      const double range_y = point_y - target_to_lidar_origin.getY();
-      const double range = sqrt(pow(range_x, 2.0) + pow(range_y, 2.0));
+      const double range = sqrt(pow(point_x, 2.0) + pow(point_y, 2.0));
 
-      if (range_x > p_min_x_range_ && range_x < p_max_x_range_ &&
-          range_y > p_min_y_range_ && range_y < p_max_y_range_ &&
+      if (point_x > p_min_x_range_ && point_x < p_max_x_range_ &&
+          point_y > p_min_y_range_ && point_y < p_max_y_range_ &&
           range > p_min_scanner_range_ && range < p_max_scanner_range_) {
         if (p_publish_scan_) {
-          double angle = atan2(range_y, range_x);
+          double angle = atan2(point_y, point_x);
           size_t idx = static_cast<int>(p_ranges_num_ * (angle + M_PI) / (2.0 * M_PI));
           if (isnan(ranges[idx]) || range < ranges[idx])
             ranges[idx] = range;
@@ -221,7 +218,7 @@ void ScansMerger::publishMessages() {
   if (!rear_scan_error_) {
     geometry_msgs::msg::TransformStamped target_to_lidar;
     try {
-     target_to_lidar = tf_buffer_->lookupTransform(p_target_frame_id_, rear_pcl_.header.frame_id, tf2::TimePointZero);
+      target_to_lidar = tf_buffer_->lookupTransform(p_target_frame_id_, rear_pcl_.header.frame_id, tf2::TimePointZero);
       tf2::doTransform(rear_pcl_, new_rear_pcl, target_to_lidar);
     }
     catch (tf2::TransformException& ex) {
@@ -238,15 +235,13 @@ void ScansMerger::publishMessages() {
     for (size_t i = 0; i < number_of_points; ++i, ++iter_x, ++iter_y){
       double point_x = (*iter_x);
       double point_y = (*iter_y);
-      const double range_x = point_x - target_to_lidar_origin.getX();
-      const double range_y = point_y - target_to_lidar_origin.getY();
-      const double range = sqrt(pow(range_x, 2.0) + pow(range_y, 2.0));
+      const double range = sqrt(pow(point_x, 2.0) + pow(point_y, 2.0));
 
-      if (range_x > p_min_x_range_ && range_x < p_max_x_range_ &&
-          range_y > p_min_y_range_ && range_y < p_max_y_range_ &&
+      if (point_x > p_min_x_range_ && point_x < p_max_x_range_ &&
+          point_y > p_min_y_range_ && point_y < p_max_y_range_ &&
           range > p_min_scanner_range_ && range < p_max_scanner_range_) {
         if (p_publish_scan_) {
-          double angle = atan2(range_y, range_x);
+          double angle = atan2(point_y, point_x);
           size_t idx = static_cast<int>(p_ranges_num_ * (angle + M_PI) / (2.0 * M_PI));
           if (isnan(ranges[idx]) || range < ranges[idx])
             ranges[idx] = range;
@@ -267,7 +262,7 @@ void ScansMerger::publishMessages() {
     scan_msg->range_min = p_min_scanner_range_;
     scan_msg->range_max = p_max_scanner_range_;
     scan_msg->ranges.assign(ranges.begin(), ranges.end());
-
+    // RCLCPP_INFO_STREAM(nh_->get_logger(), "publishing scan");
     scan_pub_->publish(*scan_msg);
   }
 
@@ -290,6 +285,7 @@ void ScansMerger::publishMessages() {
 
     pcl_msg.header.frame_id = p_target_frame_id_;
     pcl_msg.header.stamp = now;
+    // RCLCPP_INFO_STREAM(nh_->get_logger(), "publishing pcd")
     pcl_pub_->publish(pcl_msg);
   }
 
