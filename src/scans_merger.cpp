@@ -33,6 +33,11 @@
  * Author: Mateusz Przybyla
  */
 
+/*
+ * Ported to ROS2 by Giulio Schiavi
+ */
+
+
 #include "laser_scan_merger/scans_merger.h"
 
 using namespace laser_scan_merger;
@@ -168,7 +173,6 @@ void ScansMerger::publishMessages() {
   auto now = nh_->get_clock()->now();
 
   vector<float> ranges;
-//   vector<geometry_msgs::msg::Point32> points;
   vector<float> range_values;
   sensor_msgs::msg::ChannelFloat32 range_channel;
   range_channel.name = "range";
@@ -178,14 +182,9 @@ void ScansMerger::publishMessages() {
   ranges.assign(p_ranges_num_, nanf("")); // Assign nan values
 
   if (!front_scan_error_) {
-    // tf::StampedTransform target_to_lidar;
     geometry_msgs::msg::TransformStamped target_to_lidar;
     try {
-    //   tf_ls_.waitForTransform(p_target_frame_id_, now, front_pcl_.header.frame_id, front_pcl_.header.stamp, p_fixed_frame_id_, ros::Duration(0.05));
-    //   tf_ls_.lookupTransform(p_target_frame_id_, now, front_pcl_.header.frame_id, front_pcl_.header.stamp, p_fixed_frame_id_, target_to_lidar);
-    //   tf_ls_.transformPointCloud(p_target_frame_id_, now, front_pcl_, p_fixed_frame_id_, new_front_pcl);
       target_to_lidar = tf_buffer_->lookupTransform(p_target_frame_id_, front_pcl_.header.frame_id, tf2::TimePointZero);
-    //   tf2::fromMsg(target_to_lidar);
       tf2::doTransform(front_pcl_, new_front_pcl, target_to_lidar);
     }
     catch (tf2::TransformException& ex) {
@@ -195,13 +194,10 @@ void ScansMerger::publishMessages() {
     tf2::convert<geometry_msgs::msg::Transform>(target_to_lidar.transform, target_to_lidar_tf);
     const tf2::Vector3 target_to_lidar_origin = target_to_lidar_tf.getOrigin();
     RCLCPP_INFO_STREAM_ONCE(nh_->get_logger(), "Front lidar origin (frame " << front_pcl_.header.frame_id << ") is at (" << target_to_lidar_origin.getX() << ", " << target_to_lidar_origin.getY() << ") w.r.t. frame " << p_target_frame_id_);
-    // ROS_INFO_STREAM_ONCE("Front lidar origin (frame " << front_pcl_.header.frame_id << ") is at (" << target_to_lidar_origin.getX() << ", " << target_to_lidar_origin.getY() << ") w.r.t. frame " << p_target_frame_id_);
-
     const size_t number_of_points = new_front_pcl.height * new_front_pcl.width;
     sensor_msgs::PointCloud2Iterator<float> iter_x(new_front_pcl, "x");
     sensor_msgs::PointCloud2Iterator<float> iter_y(new_front_pcl, "y");
-    for (size_t i = 0; i < number_of_points; ++i, ++iter_x, ++iter_y){
-    //   auto point_copy = Point((*iter_x)), (*iter_y));      
+    for (size_t i = 0; i < number_of_points; ++i, ++iter_x, ++iter_y){     
       
       double point_x = (*iter_x);
       double point_y = (*iter_y);
@@ -212,11 +208,6 @@ void ScansMerger::publishMessages() {
       if (range_x > p_min_x_range_ && range_x < p_max_x_range_ &&
           range_y > p_min_y_range_ && range_y < p_max_y_range_ &&
           range > p_min_scanner_range_ && range < p_max_scanner_range_) {
-        // if (p_publish_pcl_) {
-        //   points.push_back(point);
-        //   range_channel.values.push_back(range);
-        // }
-
         if (p_publish_scan_) {
           double angle = atan2(range_y, range_x);
           size_t idx = static_cast<int>(p_ranges_num_ * (angle + M_PI) / (2.0 * M_PI));
@@ -254,11 +245,6 @@ void ScansMerger::publishMessages() {
       if (range_x > p_min_x_range_ && range_x < p_max_x_range_ &&
           range_y > p_min_y_range_ && range_y < p_max_y_range_ &&
           range > p_min_scanner_range_ && range < p_max_scanner_range_) {
-        // if (p_publish_pcl_) {
-        //   points.push_back(point);
-        //   range_channel.values.push_back(range);
-        // }
-
         if (p_publish_scan_) {
           double angle = atan2(range_y, range_x);
           size_t idx = static_cast<int>(p_ranges_num_ * (angle + M_PI) / (2.0 * M_PI));
@@ -304,10 +290,6 @@ void ScansMerger::publishMessages() {
 
     pcl_msg.header.frame_id = p_target_frame_id_;
     pcl_msg.header.stamp = now;
-    // pcl_msg.points.assign(points.begin(), points.end());
-    // pcl_msg.channels.push_back(range_channel);
-    // assert(range_channel.values.size() == points.size());
-
     pcl_pub_->publish(pcl_msg);
   }
 

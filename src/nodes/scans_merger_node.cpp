@@ -33,6 +33,10 @@
  * Author: Mateusz Przybyla
  */
 
+/*
+ * Ported to ROS2 by Giulio Schiavi
+ */
+
 #include "laser_scan_merger/scans_merger.h"
 
 using namespace laser_scan_merger;

@@ -2,7 +2,8 @@
 Converts two messages of type `sensor_msgs/msg/LaserScan` from topics `front_scan` and `rear_scan` into a single laser scan of the same type, published under topic `scan` and/or a point cloud of type `sensor_msgs/msg/PointCloud2`, published under topic `pcl`.
 
 ## Acknowledgements
-The code in this repository is essentially a ROS2 port of the code in [https://github.com/jk-ethz/obstacle_detector](https://github.com/jk-ethz/obstacle_detector), which itself is a fork of [https://github.com/tysik/obstacle_detector](https://github.com/tysik/obstacle_detector). You can find the original README [here](https://github.com/tysik/obstacle_detector).
+The code in this repository is essentially a ROS2 port (limited to the scan_merger node) of the code in [https://github.com/jk-ethz/obstacle_detector](https://github.com/jk-ethz/obstacle_detector), which itself is a fork of [https://github.com/tysik/obstacle_detector](https://github.com/tysik/obstacle_detector). You can find the original LICENSE [here](/ORIGINAL_LICENSE).
+
 
 ## Laser scan merger node description and parameters
 This node converts two messages of type `sensor_msgs/msg/LaserScan` from topics `front_scan` and `rear_scan` into a single laser scan of the same type, published under topic `scan` and/or a point cloud of type `sensor_msgs/msg/PointCloud2`, published under topic `pcl`. The difference between both is that the resulting laser scan divides the area into finite number of circular sectors and put one point (or actually one range value) in each section occupied by some measured points, whereas the resulting point cloud simply copies all of the points obtained from sensors.

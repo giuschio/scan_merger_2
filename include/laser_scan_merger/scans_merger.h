@@ -33,6 +33,10 @@
  * Author: Mateusz Przybyla
  */
 
+/*
+ * Ported to ROS2 by Giulio Schiavi
+ */
+
 #pragma once
 
 #include "rclcpp/rclcpp.hpp"

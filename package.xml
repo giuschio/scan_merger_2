@@ -2,14 +2,12 @@
 <package format="3">
   <name>laser_scan_merger</name>
   <version>1.0.0</version>
-  <description>Detect obstacles in form of line segments and circles from 2D laser scans.</description>
-  <maintainer email="mateusz.przybyla@put.poznan.pl">Mateusz Przybyla</maintainer>
-  <author>Mateusz Przybyla</author>
+  <description>todo.</description>
+  <maintainer email="todo@todo.com">Giulio Schiavi</maintainer>
+  <author>Giulio Schiavi</author>
   <license>BSD</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <!-- <build_depend>message_generation</build_depend> -->
-  <!-- <exec_depend>message_runtime</exec_depend> -->
 
   <depend>tf2</depend>
   <depend>tf2_geometry_msgs</depend>
